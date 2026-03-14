@@ -43,9 +43,8 @@ jobs:
   - task: KubeloginInstaller@0
     displayName: 'Install Kubelogin'
 
-  # Authenticate via Kubernetes service connection to detect the current slot
-  # NOTE: Kubernetes@1 always appends '-o json', so KubectlOutput is full JSON.
-  # We parse it with jq in the next step.
+  # Detect current slot. outputFormat: 'none' prevents the task from appending '-o json'
+  # so our jsonpath output works correctly.
   - task: Kubernetes@1
     name: getSlot
     displayName: 'Detect Active Slot from Service'
@@ -54,11 +53,11 @@ jobs:
       connectionType: 'Kubernetes Service Connection'
       kubernetesServiceEndpoint: '${{ parameters.aksServiceConnection }}'
       command: 'get'
-      arguments: 'svc ${{ parameters.serviceName }} -n ${{ parameters.namespace }}'
+      arguments: 'svc ${{ parameters.serviceName }} -n ${{ parameters.namespace }} -o jsonpath={.spec.selector.slot}'
+      outputFormat: 'none'
 
   - script: |
-      # Parse the slot from JSON output (Kubernetes@1 always returns JSON)
-      ACTIVE_SLOT=$(echo '$(getSlot.KubectlOutput)' | jq -r '.spec.selector.slot // empty' 2>/dev/null)
+      ACTIVE_SLOT="$(getSlot.KubectlOutput)"
       ACTIVE_SLOT=$(echo "$ACTIVE_SLOT" | tr -d '[:space:]')
 
       # Validate: must be "blue" or "green", otherwise first deployment

@@ -25,11 +25,12 @@ jobs:
       connectionType: 'Kubernetes Service Connection'
       kubernetesServiceEndpoint: '${{ parameters.aksServiceConnection }}'
       command: 'get'
-      arguments: 'svc ${{ parameters.serviceName }} -n ${{ parameters.namespace }}'
+      arguments: 'svc ${{ parameters.serviceName }} -n ${{ parameters.namespace }} -o jsonpath={.spec.selector.slot}'
+      outputFormat: 'none'
 
   # Determine rollback target (opposite of current)
   - script: |
-      CURRENT_SLOT=$(echo '$(getCurrentSlot.KubectlOutput)' | jq -r '.spec.selector.slot // empty' 2>/dev/null)
+      CURRENT_SLOT="$(getCurrentSlot.KubectlOutput)"
       CURRENT_SLOT=$(echo "$CURRENT_SLOT" | tr -d '[:space:]')
 
       if [ "$CURRENT_SLOT" != "blue" ] && [ "$CURRENT_SLOT" != "green" ]; then
