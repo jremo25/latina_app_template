@@ -70,17 +70,13 @@ jobs:
     displayName: 'Validate Rollback Pods'
 
   # Switch traffic to the rollback slot
-  - task: KubernetesManifest@1
+  - task: Kubernetes@1
     displayName: 'Switch Traffic to $(rollbackSlot)'
     inputs:
-      action: 'patch'
-      connectionType: 'kubernetesServiceConnection'
-      kubernetesServiceConnection: '${{ parameters.aksServiceConnection }}'
-      namespace: '${{ parameters.namespace }}'
-      resourceToPatch: 'name'
-      resourceName: 'services/${{ parameters.serviceName }}'
-      mergeStrategy: 'strategic'
-      patch: '{"spec":{"selector":{"slot":"$(rollbackSlot)"}}}'
+      connectionType: 'Kubernetes Service Connection'
+      kubernetesServiceEndpoint: '${{ parameters.aksServiceConnection }}'
+      command: 'patch'
+      arguments: 'svc ${{ parameters.serviceName }} -n ${{ parameters.namespace }} -p "{\"spec\":{\"selector\":{\"slot\":\"$(rollbackSlot)\"}}}" --type=strategic'
 
   # Verify endpoints are populated
   - task: Kubernetes@1
